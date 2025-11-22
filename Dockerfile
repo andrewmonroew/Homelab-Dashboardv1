@@ -16,6 +16,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Create data directory for SQLite database before build
+RUN mkdir -p /app/data
+
 # Build Next.js application
 RUN npm run build
 
