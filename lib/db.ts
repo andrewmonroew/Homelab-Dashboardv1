@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 
-const dbPath = path.join(process.cwd(), 'homelab.db');
+const dbPath = path.join(process.cwd(), 'data', 'homelab.db');
 const db = new Database(dbPath);
 
 // Initialize database
@@ -12,40 +12,43 @@ db.exec(`
     ip TEXT NOT NULL,
     type TEXT NOT NULL,
     status TEXT NOT NULL,
-    username TEXT,
-    password TEXT,
     last_seen TEXT,
     cpu_usage REAL,
     memory_usage REAL,
     memory_total REAL,
     temperature REAL,
-    uptime INTEGER
+    uptime INTEGER,
+    username TEXT,
+    password TEXT
   )
 `);
 
-// Seed mock data if empty
-const count = db.prepare('SELECT count(*) as count FROM devices').get() as { count: number };
+// Check if we need to seed data
+const count = db.prepare('SELECT COUNT(*) as count FROM devices').get() as { count: number };
+
 if (count.count === 0) {
+    console.log('Seeding database with initial data...');
+
     const insert = db.prepare(`
-    INSERT INTO devices (id, name, ip, type, status, username, password, last_seen, cpu_usage, memory_usage, memory_total, temperature, uptime)
-    VALUES (@id, @name, @ip, @type, @status, @username, @password, @lastSeen, @cpuUsage, @memoryUsage, @memoryTotal, @temperature, @uptime)
+    INSERT INTO devices (id, name, ip, type, status, last_seen, cpu_usage, memory_usage, memory_total, temperature, uptime, username, password)
+    VALUES (@id, @name, @ip, @type, @status, @last_seen, @cpu_usage, @memory_usage, @memory_total, @temperature, @uptime, @username, @password)
   `);
 
-    const MOCK_DEVICES = [
+    const mockDevices = [
         {
             id: '1',
             name: 'Beef (Proxmox Node)',
             ip: '192.168.1.10',
             type: 'server',
             status: 'online',
+            last_seen: new Date().toISOString(),
+            cpu_usage: 45,
+            memory_usage: 60,
+            memory_total: 100,
+            temperature: 55,
+            uptime: 86400,
             username: 'root',
-            password: 'password',
-            lastSeen: new Date().toISOString(),
-            cpuUsage: 45,
-            memoryUsage: 12.5,
-            memoryTotal: 32,
-            temperature: 65,
-            uptime: 1209600
+            password: 'password'
         },
         {
             id: '2',
@@ -53,52 +56,57 @@ if (count.count === 0) {
             ip: '192.168.1.11',
             type: 'server',
             status: 'online',
+            last_seen: new Date().toISOString(),
+            cpu_usage: 32,
+            memory_usage: 48,
+            memory_total: 100,
+            temperature: 48,
+            uptime: 172800,
             username: 'root',
-            password: 'password',
-            lastSeen: new Date().toISOString(),
-            cpuUsage: 20,
-            memoryUsage: 4.2,
-            memoryTotal: 16,
-            temperature: 55,
-            uptime: 604800
+            password: 'password'
         },
         {
             id: '3',
             name: 'Cisco 3850',
-            ip: '192.168.1.2',
+            ip: '192.168.1.1',
             type: 'switch',
             status: 'online',
-            username: 'admin',
-            password: 'password',
-            lastSeen: new Date().toISOString(),
-            cpuUsage: null,
-            memoryUsage: null,
-            memoryTotal: null,
-            temperature: null,
-            uptime: null
+            last_seen: new Date().toISOString(),
+            cpu_usage: 15,
+            memory_usage: 35,
+            memory_total: 100,
+            temperature: 42,
+            uptime: 2592000,
+            username: null,
+            password: null
         },
         {
             id: '4',
             name: 'Pi Watchdog',
-            ip: '192.168.1.5',
+            ip: '192.168.1.100',
             type: 'iot',
-            status: 'warning',
+            status: 'online',
+            last_seen: new Date().toISOString(),
+            cpu_usage: 8,
+            memory_usage: 25,
+            memory_total: 100,
+            temperature: 38,
+            uptime: 604800,
             username: 'pi',
-            password: 'raspberry',
-            lastSeen: new Date().toISOString(),
-            cpuUsage: 85,
-            memoryUsage: 0.8,
-            memoryTotal: 1,
-            temperature: 75,
-            uptime: 86400
+            password: 'raspberry'
         }
     ];
 
-    const insertTransaction = db.transaction((devices) => {
-        for (const device of devices) insert.run(device);
+    const insertMany = db.transaction((devices) => {
+        for (const device of devices) {
+            insert.run(device);
+        }
     });
 
-    insertTransaction(MOCK_DEVICES);
+    insertMany(mockDevices);
+    console.log('Database seeded successfully!');
+} else {
+    console.log(`Database already contains ${count.count} devices.`);
 }
 
 export default db;
