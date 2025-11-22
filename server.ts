@@ -3,7 +3,10 @@ import { parse } from 'url';
 import next from 'next';
 import { WebSocketServer, WebSocket } from 'ws';
 import { Client } from 'ssh2';
-import db from './lib/db';
+import db, { seedDatabase } from './lib/db';
+
+// Seed the database when the server starts
+seedDatabase();
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || 'localhost';
